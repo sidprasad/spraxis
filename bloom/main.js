@@ -1,4 +1,5 @@
 import * as bloom from "https://penrose.cs.cmu.edu/bloom.min.js";
+import { checkRCC8ConsistencyFromSpec } from "./rccchecker.js";
 
 // Helper: parse input and build regions/relations
 function parseSpec(spec, Region) {
@@ -180,6 +181,18 @@ async function buildDiagram(spec) {
 // Initial render and button handler
 document.getElementById("render-btn").onclick = () => {
   const spec = document.getElementById("spec-input").value;
+
+  let result = checkRCC8ConsistencyFromSpec(spec);
+  if (!result.consistent) {
+    alert(result.message);
+    //return;
+
+    // WHAT I ~~ WOULD ~~ Like to do is show some kind of counter-factual here.
+  }
+
+  // And, we could do some kind of counter-factual here?
+
+
   buildDiagram(spec);
 };
 // Optionally, render on page load
