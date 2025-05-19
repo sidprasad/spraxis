@@ -1,199 +1,186 @@
 import * as bloom from "https://penrose.cs.cmu.edu/bloom.min.js";
 
-const db = new bloom.DiagramBuilder(bloom.canvas(400, 400), "rcc8", 1);
+// Helper: parse input and build regions/relations
+function parseSpec(spec, Region) {
+  const regionMap = {};
+  const relations = [];
+  const lines = spec.split('\n').map(l => l.trim()).filter(Boolean);
 
-// Diagramming goes here!
-const { type, predicate, forall, forallWhere, ensure, circle, text, encourage, layer } = db;
-const { disjoint, overlapping, touching, equal, contains, greaterThan, lessThan } = bloom.constraints;
+  for (const line of lines) {
+    if (line.startsWith("Region ")) {
+      const name = line.split(" ")[1];
+      const r = Region();
+      r.name = name;
+      regionMap[name] = r;
+    } else {
+      // e.g. EQ(A, B)
+      const m = line.match(/^(\w+)\(([^,]+),\s*([^)]+)\)$/);
+      if (m) {
+        relations.push({ rel: m[1], a: m[2], b: m[3] });
+      }
+    }
+  }
+  return { regionMap, relations };
+}
 
+const minOverlap = 5; // This could be a percentage
 
+async function buildDiagram(spec) {
+  // Clear container
+  const container = document.getElementById("diagram-container");
+  container.innerHTML = "";
 
-/* This corresponds to the Penrose DOMAIN */
+  // New diagram builder each time
+  const db = new bloom.DiagramBuilder(bloom.canvas(400, 400), "rcc8", 1);
+  const { type, predicate, forall, forallWhere, ensure, circle, text, encourage, layer } = db;
+  const { disjoint, overlapping, touching, equal, contains, greaterThan, lessThan } = bloom.constraints;
 
-const Region = type();
+  // RCC8 predicates
+  const Region = type();
+  const DC = predicate();
+  const EC = predicate();
+  const PO = predicate();
+  const EQ = predicate();
+  const TPP = predicate();
+  const TPPi = predicate();
+  const NTPP = predicate();
+  const NTPPi = predicate();
 
-const DC = predicate();
-const EC= predicate();
-const PO = predicate();
-const EQ = predicate();
-const TPP= predicate();
-const TPPi= predicate();
-const NTPP= predicate();
-const NTPPi= predicate();
-/*********** */
+  // Parse
+  const { regionMap, relations } = parseSpec(spec, Region);
 
-
-/***
- Now this is the Penrose Substance. We should (somehow read this in?)
- */
-
-const A = Region();
-A.name = "A";
-const B = Region();
-B.name = "B";
-
-const C = Region();
-C.name = "C";
-
-const D = Region();
-D.name = "D";
-
-const E = Region();
-E.name = "E";
-
-NTPP(A, B);
-TPP(B, C);
-PO(D, E);
-
-DC(C, E);
-
-/************* */
-
-
-const minOverlap = 5; // This should be a percentage?
-
-/*** Now this is like the Style file */
-
-forall({ x: Region }, ({ x }) => {
-  x.icon = circle({
-    drag: true,
-  });
-
-  ensure(greaterThan(x.icon.r, 10));
-
-  let t = text ({
-    string: x.name,
-  });
-
-  x.text = t;
-
+  // Style: create icons and labels
+  forall({ x: Region }, ({ x }) => {
+    x.icon = circle({ drag: true });
+    ensure(greaterThan(x.icon.r, 10));
+    let t = text({ string: x.name });
+    x.text = t;
     ensure(contains(x.icon, t));
-
-
     encourage(bloom.objectives.near(t, x.icon));
+    layer(t, x.icon);
+  });
 
-    layer(t,  x.icon);
+  forall({ a: Region, b: Region }, ({ a, b }) => {
+    ensure(disjoint(a.text, b.text));
+  });
 
- // Encourage the size to not change much.
+  // Relations
+  for (const { rel, a, b } of relations) {
+    const A = regionMap[a], B = regionMap[b];
+    if (!A || !B) continue;
+    if (rel === "EQ") EQ(A, B);
+    if (rel === "DC") DC(A, B);
+    if (rel === "EC") EC(A, B);
+    if (rel === "PO") PO(A, B);
+    if (rel === "TPP") TPP(A, B);
+    if (rel === "TPPi") TPPi(A, B);
+    if (rel === "NTPP") NTPP(A, B);
+    if (rel === "NTPPi") NTPPi(A, B);
+  }
 
-});
+  // RCC8 constraints
 
+  // DC: Disconnected
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => DC.test(a, b), ({ a, b }) => {
+    ensure(disjoint(a.icon, b.icon, minOverlap));
+  });
 
-forall( {a : Region, b : Region}, ({a, b}) => {
-  ensure(disjoint(a.text, b.text));
-});
+  // EC: Externally Connected
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => EC.test(a, b), ({ a, b }) => {
+    ensure(touching(a.icon, b.icon));
+    ensure(disjoint(a.icon, b.icon));
+  });
 
-
-
-// RCC8 relations
-
-// DC: Disconnected
-forallWhere({ a: Region, b: Region }, ({ a, b }) => DC.test(a, b), ({ a, b }) => {
-  ensure(disjoint(a.icon, b.icon, minOverlap));
-    // ? 
-  // TODO: encourage separation instead of hardcoding margin
-});
-
-// EC: Externally Connected
-forallWhere({ a: Region, b: Region }, ({ a, b }) => EC.test(a, b), ({ a, b }) => {
-  ensure(touching(a.icon, b.icon));
-  ensure(disjoint(a.icon, b.icon));
-});
-
-// PO: Partial Overlap
-forallWhere({ a: Region, b: Region }, ({ a, b }) => PO.test(a, b), ({ a, b }) => {
-    // So this ensures the MIN overlap, but NOT the max overlap
+  // PO: Partial Overlap
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => PO.test(a, b), ({ a, b }) => {
     ensure(overlapping(a.icon, b.icon, minOverlap));
+    ensure(
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.abs(bloom.sub(a.icon.r ,b.icon.r))
+      )
+    );
+    ensure(
+      lessThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.add(a.icon.r , b.icon.r)
+      )
+    );
+    // Optionally, limit maximum overlap (e.g., at most 95%)
+    ensure(
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.mul(0.05, Math.min(a.icon.r, b.icon.r))
+      )
+    );
+  });
 
+  // EQ: Equal
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => EQ.test(a, b), ({ a, b }) => {
+    ensure(equal(a.icon.r, b.icon.r));
+    ensure(contains(a.icon, b.icon));
+    ensure(contains(b.icon, a.icon));
+  });
 
-// Not quite correct, but close. This needs some 
-// *distance* constraints (like max subsumption)
-  ensure(
-    greaterThan(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      bloom.abs(bloom.sub(a.icon.r ,b.icon.r))
-    )
-  );
-  ensure(
-    lessThan(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      bloom.add(a.icon.r , b.icon.r),
-    )
-  );
-});
+  // TPP: Tangential Proper Part
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => TPP.test(a, b), ({ a, b }) => {
+    ensure(contains(b.icon, a.icon));
+    ensure(
+      equal(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.abs(bloom.sub(b.icon.r , a.icon.r))
+      )
+    );
+    ensure(greaterThan(b.icon.r, a.icon.r));
+    layer(a.icon, b.icon);
+  });
 
-// EQ: Equal
-forallWhere({ a: Region, b: Region }, ({ a, b }) => EQ.test(a, b), ({ a, b }) => {
-  ensure(equal(a.icon.r, b.icon.r));
-  ensure(contains(a.icon, b.icon));
-  ensure(contains(b.icon, a.icon));
-});
-
-// TPP: Tangential Proper Part
-forallWhere({ a: Region, b: Region }, ({ a, b }) => TPP.test(a, b), ({ a, b }) => {
-  ensure(contains(b.icon, a.icon));
-  ensure(
-    equal(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      bloom.abs(bloom.sub(b.icon.r , a.icon.r))
-    )
-  );
-  ensure(greaterThan(b.icon.r, a.icon.r));
-  layer(a.icon, b.icon);
-});
-
-// NTPP: Non-Tangential Proper Part
-forallWhere({ a: Region, b: Region }, ({ a, b }) => NTPP.test(a, b), ({ a, b }) => {
-    console.log("NTPP", a, b);
+  // NTPP: Non-Tangential Proper Part
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => NTPP.test(a, b), ({ a, b }) => {
     ensure(contains(b.icon, a.icon, 5));
+    ensure(greaterThan(b.icon.r, a.icon.r));
+    layer(a.icon, b.icon);
+  });
 
-   ensure(greaterThan(b.icon.r, a.icon.r));
-   layer(a.icon, b.icon);
-});
+  // TPPi: Tangential Proper Part Inverse
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => TPPi.test(b, a), ({ a, b }) => {
+    ensure(contains(b.icon, a.icon));
+    ensure(
+      equal(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        Math.abs(b.icon.r - a.icon.r)
+      )
+    );
+    ensure(greaterThan(b.icon.r, a.icon.r));
+  });
 
+  // NTPPi: Non-Tangential Proper Part Inverse
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => NTPPi.test(b, a), ({ a, b }) => {
+    ensure(contains(b.icon, a.icon));
+    ensure(
+      lessThan(
+        bloom.ops.vadd(bloom.ops.vdist(a.icon.center, b.icon.center), a.icon.r),
+        b.icon.r
+      )
+    );
+    encourage(
+      lessThan(
+        bloom.ops.vadd(bloom.ops.vdist(a.icon.center, b.icon.center), a.icon.r),
+        b.icon.r - 0.2 * a.icon.r
+      )
+    );
+    ensure(greaterThan(b.icon.r, a.icon.r));
+  });
 
-/////// We can correct these LATER.
+  // Build and render
+  const diagram = await db.build();
+  container.appendChild(diagram.getInteractiveElement());
+}
 
-// TPPi: Tangential Proper Part Inverse (same as TPP but reversed roles)
-forallWhere({ a: Region, b: Region }, ({ a, b }) => TPPi.test(b, a), ({ a, b }) => {
-  ensure(contains(b.icon, a.icon));
-  ensure(
-    equal(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      Math.abs(b.icon.r - a.icon.r)
-    )
-  );
-  ensure(greaterThan(b.icon.r, a.icon.r));
-  //layer(a.icon, "above", b.icon);
-});
-
-// NTPPi: Non-Tangential Proper Part Inverse
-forallWhere({ a: Region, b: Region }, ({ a, b }) => NTPPi.test(b, a), ({ a, b }) => {
-  ensure(contains(b.icon, a.icon));
-  ensure(
-    lessThan(
-      bloom.ops.vadd(bloom.ops.vdist(a.icon.center, b.icon.center), a.icon.r),
-      b.icon.r
-    )
-  );
-  encourage(
-    lessThan(
-      bloom.ops.vadd(bloom.ops.vdist(a.icon.center, b.icon.center), a.icon.r),
-      b.icon.r - 0.2 * a.icon.r
-    )
-  );
-  ensure(greaterThan(b.icon.r, a.icon.r));
-  //layer(a.icon, "above", b.icon);
-});
-/********* */
-
-
-
-
-
-// main.js
-
-const diagram = await db.build();
-
-const interactiveElement = diagram.getInteractiveElement();
-document.getElementById("diagram-container").appendChild(interactiveElement);
+// Initial render and button handler
+document.getElementById("render-btn").onclick = () => {
+  const spec = document.getElementById("spec-input").value;
+  buildDiagram(spec);
+};
+// Optionally, render on page load
+buildDiagram(document.getElementById("spec-input").value);
