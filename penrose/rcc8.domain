@@ -1,0 +1,14 @@
+-- RCC8 Domain
+
+-- Types
+type Region
+
+-- RCC8 Base Relations
+predicate DC(Region, Region)        -- Disconnected
+predicate EC(Region, Region)        -- Externally Connected
+predicate PO(Region, Region)        -- Partial Overlap
+predicate EQ(Region, Region)        -- Equal
+predicate TPP(Region, Region)       -- Tangential Proper Part
+predicate TPPi(Region, Region)      -- TPP inverse
+predicate NTPP(Region, Region)      -- Non-Tangential Proper Part
+predicate NTPPi(Region, Region)     -- NTPP inverse

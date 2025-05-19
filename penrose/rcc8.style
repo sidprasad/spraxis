@@ -1,0 +1,104 @@
+canvas {
+  width = 800
+  height = 700
+}
+
+forall Region x {
+  shape x.icon = Circle { }
+  shape x.text = Equation {
+    string : x.label
+    fontSize : "32px"
+  }
+  ensure contains(x.icon, x.text)
+  encourage norm(x.text.center - x.icon.center) == 0
+  layer x.text above x.icon
+}
+
+
+
+-- RCC8 relations
+
+forall Region a; Region b
+where DC(a, b) {
+  ensure disjoint(a.icon, b.icon, 5)
+  -- TODO: Make this distance is not small, not hardcoded
+}
+
+forall Region a; Region b
+where EC(a, b) {
+  ensure touching(a.icon, b.icon)
+  ensure disjoint(a.icon, b.icon)
+}
+
+forall Region a; Region b
+where PO(a, b) {
+  ensure overlapping(a.icon, b.icon)
+  -- Encourage: neither contains the other (distance between centers > |r1 - r2|)
+  encourage norm(a.icon.center - b.icon.center) > abs(a.icon.r - b.icon.r)
+  -- Encourage: not fully apart (distance < r1 + r2)
+  encourage norm(a.icon.center - b.icon.center) < a.icon.r + b.icon.r
+}
+
+forall Region a; Region b
+where EQ(a, b) {
+  ensure equal(a.icon.r, b.icon.r)
+  ensure contains(a.icon, b.icon)
+  ensure contains(b.icon, a.icon)
+  -- and labels need to be dealt with
+}
+
+forall Region a; Region b
+where TPP(a, b) {
+  ensure contains(b.icon, a.icon)
+  -- ensure touching(a.icon, b.icon) -- I think this is not dealt with well by Penrose
+
+  ensure norm(a.icon.center - b.icon.center) == abs(b.icon.r - a.icon.r)
+  -- b to be strictly larger than a
+  ensure b.icon.r > a.icon.r
+
+
+
+  layer a.icon above b.icon
+}
+
+
+forall Region a; Region b
+where NTPP(a, b) {
+  ensure contains(b.icon, a.icon)
+  -- ensure a gap between boundaries: center distance + a.r < b.r
+  ensure norm(a.icon.center - b.icon.center) + a.icon.r < b.icon.r
+
+  -- Can be improved, but for visual difference.
+  encourage norm(a.icon.center - b.icon.center) + a.icon.r < b.icon.r - (0.2 * a.icon.r)
+
+  -- Also ensure b to be strictly larger than a
+  ensure b.icon.r > a.icon.r 
+  layer a.icon above b.icon
+}
+
+
+forall Region a; Region b
+where NTPPi(b, a) {
+  ensure contains(b.icon, a.icon)
+  -- ensure a gap between boundaries: center distance + a.r < b.r
+  ensure norm(a.icon.center - b.icon.center) + a.icon.r < b.icon.r
+
+  -- Can be improved, but for visual difference.
+  encourage norm(a.icon.center - b.icon.center) + a.icon.r < b.icon.r - (0.2 * a.icon.r)
+
+  -- Also ensure b to be strictly larger than a
+  ensure b.icon.r > a.icon.r 
+  layer a.icon above b.icon
+}
+
+forall Region a; Region b
+where TPPi(b, a) {
+  ensure contains(b.icon, a.icon)
+  -- ensure touching(a.icon, b.icon) -- I think this is not dealt with well by Penrose
+
+  ensure norm(a.icon.center - b.icon.center) == abs(b.icon.r - a.icon.r)
+  -- b to be strictly larger than a
+  ensure b.icon.r > a.icon.r
+
+  layer a.icon above b.icon
+}
