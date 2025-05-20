@@ -1,32 +1,40 @@
 import * as bloom from "https://penrose.cs.cmu.edu/bloom.min.js";
-import { checkRCC8ConsistencyFromSpec } from "./rccchecker.js";
+import { checkConsistency } from "./rcc8.js";
 
-// Helper: parse input and build regions/relations
-function parseSpec(spec, Region) {
-  const regionMap = {};
+const minOverlap = 5; // This could be a percentage
+
+function parseSpec(spec) {
+
+
+  const regions = [];
   const relations = [];
   const lines = spec.split('\n').map(l => l.trim()).filter(Boolean);
 
   for (const line of lines) {
     if (line.startsWith("Region ")) {
-      const name = line.split(" ")[1];
-      const r = Region();
-      r.name = name;
-      regionMap[name] = r;
+      const decls = line.split(" ")[1];
+      const rnames = names.split(",").map(n => n.trim());
+      regions.push(...rnames);
+
     } else {
       // e.g. EQ(A, B)
       const m = line.match(/^(\w+)\(([^,]+),\s*([^)]+)\)$/);
       if (m) {
-        relations.push({ rel: m[1], a: m[2], b: m[3] });
+
+        const a = m[2].trim();
+        const b = m[3].trim();
+        const rel = m[1].trim();
+
+        relations.push({ rel, a, b });
       }
     }
   }
-  return { regionMap, relations };
+  return { regions, relations };
 }
 
-const minOverlap = 5; // This could be a percentage
 
-async function buildDiagram(spec) {
+
+async function buildDiagram(regions, relations) {
   // Clear container
   const container = document.getElementById("diagram-container");
   container.innerHTML = "";
@@ -47,8 +55,12 @@ async function buildDiagram(spec) {
   const NTPP = predicate();
   const NTPPi = predicate();
 
-  // Parse
-  const { regionMap, relations } = parseSpec(spec, Region);
+  let regionMap = {};
+  regions.forEach(name => {
+    const r = Region();
+    r.name = name;
+    regionMap[name] = r;
+  });
 
   // Style: create icons and labels
   forall({ x: Region }, ({ x }) => {
@@ -182,7 +194,13 @@ async function buildDiagram(spec) {
 document.getElementById("render-btn").onclick = () => {
   const spec = document.getElementById("spec-input").value;
 
-  let result = checkRCC8ConsistencyFromSpec(spec);
+  let {regions, relations} = parseSpec(spec);
+
+  // Now, check consistency.
+
+  // If not consistent, show a message, and perhaps some kind of counter-factual diagram.
+  // Else show the diagram, and hope its realizable in R^2.
+
   if (!result.consistent) {
     alert(result.message);
     //return;
@@ -190,10 +208,7 @@ document.getElementById("render-btn").onclick = () => {
     // WHAT I ~~ WOULD ~~ Like to do is show some kind of counter-factual here.
   }
 
-  // And, we could do some kind of counter-factual here?
-
-
-  buildDiagram(spec);
+  buildDiagram(regions, relations);
 };
 // Optionally, render on page load
 buildDiagram(document.getElementById("spec-input").value);
