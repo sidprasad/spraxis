@@ -7,7 +7,7 @@ const NTPP = "NTPP"; // Non-Tangential Proper Part
 const TPPi = "TPPi"; // Tangential Proper Part inverse
 const NTPPi = "NTPPi"; // Non-Tangential Proper Part inverse
 
-const RCC8Relations = [
+export const RCC8Relations = [
   DC,
   EC,
   PO,
@@ -17,6 +17,65 @@ const RCC8Relations = [
   TPPi,
   NTPPi
 ];
+
+// 1. RCC8 conceptual neighborhood graph (adjacency list)
+export const RCC8CNG = {
+  DC: [EC],
+  EC: [DC, PO],
+  PO: [EC, TPP, NTPP, TPPi, NTPPi],
+  TPP: [PO, EQ],
+  NTPP: [PO, EQ],
+  TPPi: [PO, EQ],
+  NTPPi: [PO, EQ],
+  EQ: [TPP, NTPP, TPPi, NTPPi]
+};
+
+
+//// Regions ///
+// Singletons [DC], [EC], [PO], [TPP], [NTPP], [TPPi], [NTPPi], [EQ]
+// Connected pairs
+// [DC, EC]
+// [EC, PO]
+// [PO, TPP]
+// [PO, NTPP]
+// [PO, TPPi]
+// [PO, NTPPi]
+// [TPP, EQ]
+// [NTPP, EQ]
+// [TPPi, EQ]
+// [NTPPi, EQ]
+
+
+// Adjacent Triads
+// [DC, EC, PO]
+// [EC, PO, TPP]
+// [EC, PO, NTPP]
+// [EC, PO, TPPi]
+// [EC, PO, NTPPi]
+// [PO, TPP, EQ]
+// [PO, NTPP, EQ]
+// [PO, TPPi, EQ]
+// [PO, NTPPi, EQ]
+// [TPP, EQ, NTPP]
+// [NTPPi, EQ, TPPi]
+
+// Central Region
+// [PO, TPP, NTPP, TPPi, NTPPi, EQ] 
+
+// Univ
+// DC, EC, PO, TPP, NTPP, TPPi, NTPPi, EQ]
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Full RCC8 composition table
@@ -114,12 +173,16 @@ export class RCC8Utility {
   constructor(spec) {
     this.spec = spec;
     let { regions, relations } = this.parseSpec();
+
+
     this.regions = regions;
     this.relations = relations;
   }
 
 
-  static getRelations() {
+
+
+  static getAllRCC8Relations() {
     return RCC8Relations;
   }
 
@@ -144,7 +207,7 @@ export class RCC8Utility {
 
   parseSpec() {
     const regions = new Set();
-    const relations = [];
+    const relations = {};
     const lines = this.spec.split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
@@ -170,7 +233,8 @@ export class RCC8Utility {
         }
         const a = relMatch[2].trim();
         const b = relMatch[3].trim();
-        relations.push({ a, b, rels });
+        if (!relations[a]) relations[a] = {};
+        relations[a][b] = rels;
         regions.add(a);
         regions.add(b);
       }
@@ -179,6 +243,128 @@ export class RCC8Utility {
   }
 
 
+
+  // Check if the relations are consistent
+  isConsistent() {
+    // 1. Initialize the constraint network (deep copy)
+    const regions = this.regions;
+    const input = this.relations;
+    const allRels = RCC8Relations;
+    // Build full matrix: constraints[a][b] = array of allowed relations
+    const constraints = {};
+    for (const a of regions) {
+      constraints[a] = {};
+      for (const b of regions) {
+        if (a === b) {
+          constraints[a][b] = ["EQ"];
+        } else if (input[a] && input[a][b]) {
+          constraints[a][b] = [...input[a][b]];
+        } else {
+          constraints[a][b] = [...allRels];
+        }
+      }
+    }
+
+    // 2. Path consistency
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const i of regions) {
+        for (const j of regions) {
+          for (const k of regions) {
+            if (i === j || j === k || i === k) continue;
+            const rel_ij = constraints[i][j];
+            const rel_jk = constraints[j][k];
+            const rel_ik = constraints[i][k];
+
+            // Compose rel_ij and rel_jk
+            let possible = new Set();
+            for (const r1 of rel_ij) {
+              for (const r2 of rel_jk) {
+                const comp = RCC8CompositionTable[r1][r2] || allRels;
+                for (const r of comp) possible.add(r);
+              }
+            }
+            // Intersect with current rel_ik
+            const newRel_ik = rel_ik.filter(r => possible.has(r));
+            if (newRel_ik.length === 0) {
+              // Inconsistency found
+              return {
+                consistent: false,
+                culprit: { i, j, k },
+                message: `Inconsistency: (${i},${j}) ∈ {${rel_ij.join(',')}}; (${j},${k}) ∈ {${rel_jk.join(',')}}; (${i},${k}) became empty`
+              };
+            }
+            if (newRel_ik.length < rel_ik.length) {
+              constraints[i][k] = newRel_ik;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Return refined constraints if consistent
+    return {
+      consistent: true,
+      refined: constraints
+    };
+  }
+
+
+
+  isContiguousRCC8Set(rels) {
+    if (rels.length <= 1) return true;
+    const relSet = new Set(rels);
+    // BFS from first relation
+    const queue = [rels[0]];
+    const visited = new Set([rels[0]]);
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      for (const neighbor of RCC8CNG[curr] || []) {
+        if (relSet.has(neighbor) && !visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+    // If all rels are visited, the set is connected
+    return rels.every(r => visited.has(r));
+  }
+
+  /**
+   * I hope:
+   * @returns This will always return the partition into maximal contiguous sets, with no subsumed sets.
+   *  
+   */
+partitionIntoContiguousSets(rels) {
+  if (rels.length <= 1) return [rels.slice()];
+  const relSet = new Set(rels);
+  const visited = new Set();
+  const components = [];
+  for (const rel of rels) {
+    if (visited.has(rel)) continue;
+    // BFS for this component
+    const queue = [rel];
+    const component = [];
+    visited.add(rel);
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      component.push(curr);
+      for (const neighbor of RCC8CNG[curr] || []) {
+        if (relSet.has(neighbor) && !visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+    components.push(component);
+  }
+
+  
+
+  return components;
+}
 
 }
 
