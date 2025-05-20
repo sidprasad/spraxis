@@ -66,13 +66,13 @@ const epsilon = 1e-2;
 }
  */
 // TODO: Need to rewrite this to use the new regions and relations :)
-export async function buildDiagram(rcc6util) {
+export async function buildDiagram(rcc8util) {
   // Clear container
   const container = document.getElementById("diagram-container");
   container.innerHTML = "";
 
   // Check for consistency
-  let res = rcc6util.isConsistent();
+  let res = rcc8util.isConsistent();
 
     if (!res.consistent) {
         console.log(res.culprit);
@@ -84,8 +84,7 @@ export async function buildDiagram(rcc6util) {
     }
 
   let relations = res.refined;
-  let regions = rcc6util.regions;
-
+  let regions = rcc8util.regions;
 
 
   // New diagram builder each time
@@ -105,6 +104,8 @@ export async function buildDiagram(rcc6util) {
   const EQ = predicate();
   const TPP = predicate();
   const NTPP = predicate();
+  const TPPi = predicate();
+  const NTPPi = predicate();
 
 
   const notDC = predicate();
@@ -113,7 +114,8 @@ export async function buildDiagram(rcc6util) {
   const notEQ = predicate();
   const notTPP = predicate();
   const notNTPP = predicate();
-
+  const notTPPi = predicate();
+  const notNTPPi = predicate();
 
   // And potential helper
   const PP = predicate();
@@ -340,6 +342,51 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b 
   });
 
 
+  // NTPPi: Non-Tangential Proper Part inverse
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => NTPPi.test(a, b), ({ a, b }) => {
+    ensure(contains(a.icon, b.icon));
+    ensure(greaterThan(a.icon.r, b.icon.r));
+    layer(a.icon, b.icon);
+  });
+
+
+  // TPPi: Tangential Proper Part inverse
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => TPPi.test(a, b), ({ a, b }) => {
+    ensure(contains(a.icon, b.icon));
+    ensure(
+      equal(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.abs(bloom.sub(a.icon.r , b.icon.r))
+      )
+    );
+    ensure(greaterThan(a.icon.r, b.icon.r));
+    layer(a.icon, b.icon);
+  });
+
+
+
+  ////////// TODO: Double check these in the cold light of day ////
+
+  // NOT TPPi
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => notTPPi.test(a, b), ({ b, a }) => {
+      ensure(
+        greaterThan(
+          bloom.ops.vdist(a.icon.center, b.icon.center),
+          bloom.sub(bloom.abs(b.icon.r, a.icon.r), epsilon)
+        )
+      );
+  });
+
+  // NTPPi: Not Non-Tangential Proper Part inverse
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPPi.test(a, b), ({ b, a }) => {
+    ensure(
+        greaterThan(
+          bloom.ops.vdist(a.icon.center, b.icon.center),
+          bloom.add(bloom.abs(bloom.sub(a.icon.r, b.icon.r)), epsilon)
+        )
+      );
+  });
+
 
   // Contains, but not equal
   forallWhere({ a: Region, b: Region }, ({ a, b }) => PP.test(b, a), ({ a, b }) => {
@@ -347,6 +394,8 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b 
 
     ensure(greaterThan(b.icon.r, a.icon.r));
   });
+
+
 
 
 
