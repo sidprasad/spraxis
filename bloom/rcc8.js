@@ -1,10 +1,10 @@
 // RCC6 base relations
-const DC = "DC";    // Disconnected
-const EC = "EC";    // Externally Connected
-const PO = "PO";    // Partial Overlap
-const TPP = "TPP";  // Tangential Proper Part
-const NTPP = "NTPP";// Non-Tangential Proper Part
-const EQ = "EQ";    // Equal
+export const DC = "DC";    // Disconnected
+export const EC = "EC";    // Externally Connected
+export const PO = "PO";    // Partial Overlap
+export const TPP = "TPP";  // Tangential Proper Part
+export const NTPP = "NTPP";// Non-Tangential Proper Part
+export const EQ = "EQ";    // Equal
 
 export const RCC6Relations = [DC, EC, PO, TPP, NTPP, EQ];
 
@@ -75,47 +75,9 @@ function setKey(rels) {
   return Array.from(rels).sort().join(",");
 }
 
-// Example:
-const RCC6Regions = {};
-RCC6Regions[setKey([DC, EC])] = "DC_EC"; // Disconnected or Touching
-RCC6Regions[setKey([EC, PO])] = "EC_PO"; // Externally Connected or Partial Overlap
-RCC6Regions[setKey([PO, TPP])] = "PO_TPP"; // Partial Overlap or Tangential Proper Part
-RCC6Regions[setKey([TPP, EQ])] = "TPP_EQ"; // Tangential Proper Part or Equal
-RCC6Regions[setKey([NTPP, EQ])] = "NTPP_EQ"; // Non-Tangential Proper Part or Equal  ///// Are these right?
-
-
-export const z = [
 
 
 
-  // 2 node
-  new Set([DC, EC])
-  new Set([EC, PO])
-  new Set([PO, TPP])
-  new Set([PO, NTPP])
-  new Set([TPP, EQ])
-  new Set([NTPP, EQ])
-
-  // 3 node areas
-  new Set([DC, EC, PO])
-  new Set([EC, PO, TPP])
-  new Set([EC, PO, NTPP])
-  new Set([PO, TPP, EQ])
-  new Set([PO, NTPP, EQ])
-
-  new Set([DC, EC, PO])
-  new Set([EC, PO, TPP])
-  new Set([EC, PO, NTPP])
-  new Set([PO, TPP, EQ])
-  new Set([PO, NTPP, EQ])
-
-  new Set([DC, EC, PO, TPP, EQ])
-  new Set([DC, EC, PO, NTPP, EQ])
-  new Set([DC, EC, PO, TPP, NTPP])
-  new Set([EC, PO, TPP, NTPP, EQ])
-
-  new Set([DC, EC, PO, TPP, NTPP, EQ]) 
-]
 
 function equalSets(setA, setB) {
     if (setA.size !== setB.size) return false;
