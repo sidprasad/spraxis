@@ -1,113 +1,47 @@
-const DC = "DC"; // Disconnected
-const EC = "EC"; // Externally Connected
-const PO = "PO"; // Partial Overlap
-const EQ = "EQ"; // Equal
-const TPP = "TPP"; // Tangential Proper Part
-const NTPP = "NTPP"; // Non-Tangential Proper Part
-const TPPi = "TPPi"; // Tangential Proper Part inverse
-const NTPPi = "NTPPi"; // Non-Tangential Proper Part inverse
+// RCC6 base relations
+const DC = "DC";    // Disconnected
+const EC = "EC";    // Externally Connected
+const PO = "PO";    // Partial Overlap
+const TPP = "TPP";  // Tangential Proper Part
+const NTPP = "NTPP";// Non-Tangential Proper Part
+const EQ = "EQ";    // Equal
 
-export const RCC8Relations = [
-  DC,
-  EC,
-  PO,
-  EQ,
-  TPP,
-  NTPP,
-  TPPi,
-  NTPPi
-];
+export const RCC6Relations = [DC, EC, PO, TPP, NTPP, EQ];
 
-// 1. RCC8 conceptual neighborhood graph (adjacency list)
-export const RCC8CNG = {
-  DC: [EC],
-  EC: [DC, PO],
-  PO: [EC, TPP, NTPP, TPPi, NTPPi],
-  TPP: [PO, EQ],
-  NTPP: [PO, EQ],
-  TPPi: [PO, EQ],
-  NTPPi: [PO, EQ],
-  EQ: [TPP, NTPP, TPPi, NTPPi]
+// RCC6 conceptual neighborhood graph (adjacency list)
+export const RCC6CNG = {
+  DC:   [EC],
+  EC:   [DC, PO],
+  PO:   [EC, TPP],
+  TPP:  [PO, EQ],
+  NTPP: [EQ],
+  EQ:   [TPP, NTPP]
 };
 
-
-//// Regions ///
-// Singletons [DC], [EC], [PO], [TPP], [NTPP], [TPPi], [NTPPi], [EQ]
-// Connected pairs
-// [DC, EC]
-// [EC, PO]
-// [PO, TPP]
-// [PO, NTPP]
-// [PO, TPPi]
-// [PO, NTPPi]
-// [TPP, EQ]
-// [NTPP, EQ]
-// [TPPi, EQ]
-// [NTPPi, EQ]
-
-
-// Adjacent Triads
-// [DC, EC, PO]
-// [EC, PO, TPP]
-// [EC, PO, NTPP]
-// [EC, PO, TPPi]
-// [EC, PO, NTPPi]
-// [PO, TPP, EQ]
-// [PO, NTPP, EQ]
-// [PO, TPPi, EQ]
-// [PO, NTPPi, EQ]
-// [TPP, EQ, NTPP]
-// [NTPPi, EQ, TPPi]
-
-// Central Region
-// [PO, TPP, NTPP, TPPi, NTPPi, EQ] 
-
-// Univ
-// DC, EC, PO, TPP, NTPP, TPPi, NTPPi, EQ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Full RCC8 composition table
-export const RCC8CompositionTable = {
+// RCC6 composition table (standard)
+export const RCC6CompositionTable = {
   DC: {
-    DC: RCC8Relations,
+    DC: RCC6Relations,
     EC: [DC, EC, PO, TPP, NTPP],
     PO: [DC, EC, PO, TPP, NTPP],
     TPP: [DC, EC, PO, TPP, NTPP],
     NTPP: [DC, EC, PO, TPP, NTPP],
-    TPPi: [DC],
-    NTPPi: [DC],
     EQ: [DC]
   },
   EC: {
-    DC: [DC, EC, PO, TPPi, NTPPi],
-    EC: [DC, EC, PO, TPP, TPPi, EQ],
+    DC: [DC, EC, PO],
+    EC: [DC, EC, PO, TPP, EQ],
     PO: [DC, EC, PO, TPP, NTPP],
     TPP: [EC, PO, TPP, NTPP],
     NTPP: [PO, TPP, NTPP],
-    TPPi: [DC, EC],
-    NTPPi: [DC],
     EQ: [EC]
   },
   PO: {
-    DC: [DC, EC, PO, TPPi, NTPPi],
-    EC: [DC, EC, PO, TPPi, NTPPi],
-    PO: RCC8Relations,
+    DC: [DC, EC, PO],
+    EC: [DC, EC, PO],
+    PO: RCC6Relations,
     TPP: [PO, TPP, NTPP],
     NTPP: [PO, TPP, NTPP],
-    TPPi: [DC, EC, PO, TPPi, NTPPi],
-    NTPPi: [DC, EC, PO, TPPi, NTPPi],
     EQ: [PO]
   },
   TPP: {
@@ -116,9 +50,7 @@ export const RCC8CompositionTable = {
     PO: [DC, EC, PO, TPP, NTPP],
     TPP: [TPP, NTPP],
     NTPP: [NTPP],
-    TPPi: [DC, EC, PO, TPP, TPPi, EQ],
-    EQ: [TPP],
-    NTPPi: [DC, EC, PO, TPPi, NTPPi]
+    EQ: [TPP]
   },
   NTPP: {
     DC: [DC],
@@ -126,29 +58,7 @@ export const RCC8CompositionTable = {
     PO: [DC, EC, PO, TPP, NTPP],
     TPP: [NTPP],
     NTPP: [NTPP],
-    TPPi: [DC, EC, PO, TPP, NTPP],
-    NTPPi: RCC8Relations,
     EQ: [NTPP]
-  },
-  TPPi: {
-    DC: [DC, EC, PO, TPPi, NTPPi],
-    EC: [EC, PO, TPPi, NTPPi],
-    PO: [PO, TPPi, NTPPi],
-    TPP: [PO, TPP, TPPi, EQ],
-    NTPP: [PO, TPP, NTPP],
-    TPPi: [TPPi, NTPPi],
-    NTPPi: [NTPPi],
-    EQ: [TPPi]
-  },
-  NTPPi: {
-    DC: [DC, EC, PO, TPPi, NTPPi],
-    EC: [PO, TPPi, NTPPi],
-    PO: [PO, TPPi, NTPPi],
-    TPP: [PO, TPPi, NTPPi],
-    NTPP: [PO, TPP, NTPP, TPPi, NTPPi, EQ],
-    TPPi: [NTPPi],
-    NTPPi: [NTPPi],
-    EQ: [NTPPi]
   },
   EQ: {
     DC: [DC],
@@ -156,16 +66,101 @@ export const RCC8CompositionTable = {
     PO: [PO],
     TPP: [TPP],
     NTPP: [NTPP],
-    TPPi: [TPPi],
-    NTPPi: [NTPPi],
     EQ: [EQ]
   }
-
 };
 
-export class RCC8Utility {
+function setKey(rels) {
+  // rels: Array or Set of relation strings
+  return Array.from(rels).sort().join(",");
+}
+
+// Example:
+const RCC6Regions = {};
+RCC6Regions[setKey([DC, EC])] = "DC_EC"; // Disconnected or Touching
+RCC6Regions[setKey([EC, PO])] = "EC_PO"; // Externally Connected or Partial Overlap
+RCC6Regions[setKey([PO, TPP])] = "PO_TPP"; // Partial Overlap or Tangential Proper Part
+RCC6Regions[setKey([TPP, EQ])] = "TPP_EQ"; // Tangential Proper Part or Equal
+RCC6Regions[setKey([NTPP, EQ])] = "NTPP_EQ"; // Non-Tangential Proper Part or Equal  ///// Are these right?
 
 
+export const z = [
+
+
+
+  // 2 node
+  new Set([DC, EC])
+  new Set([EC, PO])
+  new Set([PO, TPP])
+  new Set([PO, NTPP])
+  new Set([TPP, EQ])
+  new Set([NTPP, EQ])
+
+  // 3 node areas
+  new Set([DC, EC, PO])
+  new Set([EC, PO, TPP])
+  new Set([EC, PO, NTPP])
+  new Set([PO, TPP, EQ])
+  new Set([PO, NTPP, EQ])
+
+  new Set([DC, EC, PO])
+  new Set([EC, PO, TPP])
+  new Set([EC, PO, NTPP])
+  new Set([PO, TPP, EQ])
+  new Set([PO, NTPP, EQ])
+
+  new Set([DC, EC, PO, TPP, EQ])
+  new Set([DC, EC, PO, NTPP, EQ])
+  new Set([DC, EC, PO, TPP, NTPP])
+  new Set([EC, PO, TPP, NTPP, EQ])
+
+  new Set([DC, EC, PO, TPP, NTPP, EQ]) 
+]
+
+function equalSets(setA, setB) {
+    if (setA.size !== setB.size) return false;
+    for (const item of setA) {
+        if (!setB.has(item)) return false;
+    }
+    return true;
+}
+
+
+function getAreaName(rels) {
+
+
+    let relsSet = new Set(rels);
+
+
+
+    // If the relation set has length 1, return the name of that relation
+    if (rels.length === 1) {
+        return rels[0];
+    }
+
+    if (relse.size == 2) {
+     
+     
+     
+      new Set([DC, EC]) 
+  [EC, PO]
+  [PO, TPP]
+  [PO, NTPP]
+  [TPP, EQ]
+  [NTPP, EQ],
+    }
+
+
+
+
+}
+
+
+
+
+
+
+export class RCC6Utility {
   spec;
   regions;
   relations;
@@ -173,37 +168,30 @@ export class RCC8Utility {
   constructor(spec) {
     this.spec = spec;
     let { regions, relations } = this.parseSpec();
-
-
     this.regions = regions;
     this.relations = relations;
   }
 
-
-
-
-  static getAllRCC8Relations() {
-    return RCC8Relations;
+  static getAllRCC6Relations() {
+    return RCC6Relations;
   }
 
   static getCompositionTable() {
-    return RCC8CompositionTable;
+    return RCC6CompositionTable;
   }
 
   static getConverseRelation(relation) {
+    // In RCC6, TPP and NTPP are not distinguished by direction, so converse is itself
     switch (relation) {
       case DC: return DC;
       case EC: return EC;
       case PO: return PO;
       case EQ: return EQ;
-      case TPP: return TPPi;
-      case NTPP: return NTPPi;
-      case TPPi: return TPP;
-      case NTPPi: return NTPP;
+      case TPP: return TPP;
+      case NTPP: return NTPP;
       default: throw new Error(`Unknown relation: ${relation}`);
     }
   }
-
 
   parseSpec() {
     const regions = new Set();
@@ -227,7 +215,7 @@ export class RCC8Utility {
       if (relMatch) {
         let rels;
         if (relMatch[1].startsWith("{")) {
-          rels = relMatch[1].slice(1, -1).split(",").map(r => r.trim()).filter(r => RCC8Relations.includes(r));
+          rels = relMatch[1].slice(1, -1).split(",").map(r => r.trim()).filter(r => RCC6Relations.includes(r));
         } else {
           rels = [relMatch[1]];
         }
@@ -242,21 +230,17 @@ export class RCC8Utility {
     return { regions: Array.from(regions), relations };
   }
 
-
-
-  // Check if the relations are consistent
+  // Path consistency
   isConsistent() {
-    // 1. Initialize the constraint network (deep copy)
     const regions = this.regions;
     const input = this.relations;
-    const allRels = RCC8Relations;
-    // Build full matrix: constraints[a][b] = array of allowed relations
+    const allRels = RCC6Relations;
     const constraints = {};
     for (const a of regions) {
       constraints[a] = {};
       for (const b of regions) {
         if (a === b) {
-          constraints[a][b] = ["EQ"];
+          constraints[a][b] = [EQ];
         } else if (input[a] && input[a][b]) {
           constraints[a][b] = [...input[a][b]];
         } else {
@@ -265,7 +249,6 @@ export class RCC8Utility {
       }
     }
 
-    // 2. Path consistency
     let changed = true;
     while (changed) {
       changed = false;
@@ -277,18 +260,15 @@ export class RCC8Utility {
             const rel_jk = constraints[j][k];
             const rel_ik = constraints[i][k];
 
-            // Compose rel_ij and rel_jk
             let possible = new Set();
             for (const r1 of rel_ij) {
               for (const r2 of rel_jk) {
-                const comp = RCC8CompositionTable[r1][r2] || allRels;
+                const comp = RCC6CompositionTable[r1][r2] || allRels;
                 for (const r of comp) possible.add(r);
               }
             }
-            // Intersect with current rel_ik
             const newRel_ik = rel_ik.filter(r => possible.has(r));
             if (newRel_ik.length === 0) {
-              // Inconsistency found
               return {
                 consistent: false,
                 culprit: { i, j, k },
@@ -303,69 +283,60 @@ export class RCC8Utility {
         }
       }
     }
-
-    // 3. Return refined constraints if consistent
     return {
       consistent: true,
       refined: constraints
     };
   }
 
-
-
-  isContiguousRCC8Set(rels) {
+  // Check if a set of relations is contiguous in the RCC6 CNG
+  isContiguousRCC6Set(rels) {
     if (rels.length <= 1) return true;
     const relSet = new Set(rels);
-    // BFS from first relation
     const queue = [rels[0]];
     const visited = new Set([rels[0]]);
     while (queue.length > 0) {
       const curr = queue.shift();
-      for (const neighbor of RCC8CNG[curr] || []) {
+      for (const neighbor of RCC6CNG[curr] || []) {
         if (relSet.has(neighbor) && !visited.has(neighbor)) {
           visited.add(neighbor);
           queue.push(neighbor);
         }
       }
     }
-    // If all rels are visited, the set is connected
     return rels.every(r => visited.has(r));
   }
 
-  /**
-   * I hope:
-   * @returns This will always return the partition into maximal contiguous sets, with no subsumed sets.
-   *  
-   */
-partitionIntoContiguousSets(rels) {
-  if (rels.length <= 1) return [rels.slice()];
-  const relSet = new Set(rels);
-  const visited = new Set();
-  const components = [];
-  for (const rel of rels) {
-    if (visited.has(rel)) continue;
-    // BFS for this component
-    const queue = [rel];
-    const component = [];
-    visited.add(rel);
-    while (queue.length > 0) {
-      const curr = queue.shift();
-      component.push(curr);
-      for (const neighbor of RCC8CNG[curr] || []) {
-        if (relSet.has(neighbor) && !visited.has(neighbor)) {
-          visited.add(neighbor);
-          queue.push(neighbor);
+  // Partition a set of relations into maximal contiguous sets
+  partitionIntoContiguousSets(rels) {
+    if (rels.length <= 1) return [rels.slice()];
+    const relSet = new Set(rels);
+    const visited = new Set();
+    const components = [];
+    for (const rel of rels) {
+      if (visited.has(rel)) continue;
+      const queue = [rel];
+      const component = [];
+      visited.add(rel);
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        component.push(curr);
+        for (const neighbor of RCC6CNG[curr] || []) {
+          if (relSet.has(neighbor) && !visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+          }
         }
       }
+      components.push(component);
     }
-    components.push(component);
+    return components;
   }
 
-  
-
-  return components;
-}
-
+  // Collapse a set of relations to a canonical area name if possible
+  static canonicalAreaName(rels) {
+    return canonicalRCC6Area(rels);
+  }
 }
 
 
