@@ -2,16 +2,7 @@ import * as bloom from "https://penrose.cs.cmu.edu/bloom.min.js";
 const minOverlap = 5; // This could be a percentage
 
 
-// minOverlap for connecting
-
-// maxOverlap for TOUCHING = 1
-
-
-
-
-
-// eesh, maybe the correct approach ~is~ to write !EC, !DC, etc
-
+const epsilon = 1e-2;
 
 
 /**
@@ -75,13 +66,13 @@ const minOverlap = 5; // This could be a percentage
 }
  */
 // TODO: Need to rewrite this to use the new regions and relations :)
-export async function buildDiagram(rcc8util) {
+export async function buildDiagram(rcc6util) {
   // Clear container
   const container = document.getElementById("diagram-container");
   container.innerHTML = "";
 
   // Check for consistency
-  let res = rcc8util.isConsistent();
+  let res = rcc6util.isConsistent();
 
     if (!res.consistent) {
         console.log(res.culprit);
@@ -93,7 +84,7 @@ export async function buildDiagram(rcc8util) {
     }
 
   let relations = res.refined;
-  let regions = rcc8util.regions;
+  let regions = rcc6util.regions;
 
 
 
@@ -106,8 +97,6 @@ export async function buildDiagram(rcc8util) {
   const Region = type();
 
   // Complete space Region
-
-  const U = predicate();
 
   // Singleton regions
   const DC = predicate();
@@ -126,9 +115,10 @@ export async function buildDiagram(rcc8util) {
   const notNTPP = predicate();
 
 
-  let regionMap = {};
+  // And potential helper
+  const PP = predicate();
 
-  console.log("Regions: ", regions);
+  let regionMap = {};
 
   regions.forEach(name => {
     const r = Region();
@@ -154,10 +144,14 @@ export async function buildDiagram(rcc8util) {
   console.log("Relations: ", relations);
 
 
+  
+
   for (const a of Object.keys(relations)) {
     for (const b of Object.keys(relations[a])) {
         const rels = relations[a][b]; // array of allowed relations
 
+
+        // TODO: Here, we have to deal with contiguous subsets?
 
 
 
