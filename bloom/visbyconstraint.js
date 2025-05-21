@@ -66,25 +66,11 @@ const epsilon = 1e-2;
 }
  */
 // TODO: Need to rewrite this to use the new regions and relations :)
-export async function buildDiagram(rcc8util) {
+export async function buildDiagram(relations, regions) {
   // Clear container
   const container = document.getElementById("diagram-container");
   container.innerHTML = "";
 
-  // Check for consistency
-  let res = rcc8util.isConsistent();
-
-    if (!res.consistent) {
-        console.log(res.culprit);
-        alert(res.message);
-
-        // If not consistent, show a message, and perhaps some kind of 
-        // counter-factual diagram.
-        return;
-    }
-
-  let relations = res.refined;
-  let regions = rcc8util.regions;
 
 
   // New diagram builder each time

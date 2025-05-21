@@ -1,5 +1,10 @@
-import { RCC8Utility } from "./rcc6.js";
+import { RCC8Utility } from "./rcc8.js";
 import { buildDiagram } from "./visbyconstraint.js";
+
+
+
+
+
 
 
 
@@ -7,11 +12,21 @@ import { buildDiagram } from "./visbyconstraint.js";
 document.getElementById("render-btn").onclick = () => {
   const spec = document.getElementById("spec-input").value;
 
-  let rcc6 = new RCC8Utility(spec);
+  let rcc8util = new RCC8Utility(spec);
   // NOW, the refined relations need to be converted to the correct format for Bloom. TODOTODO
 
+
+  let result = rcc8util.checkPathConsistency();
+  if (!result.consistent) {
+    alert("Inconsistent: " + result.message);
+    return;
+  }
+
+  let regions = rcc8util.regions;
+  let relations = result.refined;
+
   // TODO: Should this be robust to handle disjunctions?
-  buildDiagram(rcc6);
+  buildDiagram(regions, refined);
 };
 // Optionally, render on page load
 //buildDiagram(document.getElementById("spec-input").value);
