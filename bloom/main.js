@@ -17,6 +17,10 @@ document.getElementById("render-btn").onclick = () => {
 
 
   let result = rcc8util.checkPathConsistency();
+
+  console.log("Result", result);
+
+
   if (!result.consistent) {
     alert("Inconsistent: " + result.message);
     return;
@@ -24,9 +28,9 @@ document.getElementById("render-btn").onclick = () => {
 
   let regions = rcc8util.regions;
   let relations = result.refined;
-
+  console.log("Regions", regions);
   // TODO: Should this be robust to handle disjunctions?
-  buildDiagram(regions, refined);
+  buildDiagram(relations, regions);
 };
 // Optionally, render on page load
 //buildDiagram(document.getElementById("spec-input").value);
