@@ -41,15 +41,15 @@ export class RCC8Utility {
 
 
   /**
-   * @param {string} spec - The RCC8 specification string. Each line is a single RCC8 def.. 
+   * @param {string} spec - The RCC8 specification string. Each line is a disjunction for a pair.
    * Example: 
    * Region A, B, C
-   * EC(A, B)
-   * PO(A,B)
+   * {EC, DC}(A, B)
+   * {DC, PO}(B, C)
    * 
    * @returns  {Object} {regions - Array of region names (e.g., ["A", "B", "C"]), 
    *                relations - Object mapping region pairs to arrays of possible RCC8 relations.
-   *                Example: { A: { B: ["DC"] }, B: { C: ["EC"] } }
+   *                Example: { A: { B: ["EC", "DC"] }, B: { C: ["DC", "PO"] } }
    */
   parseSpec() {
     const regions = new Set();
@@ -69,7 +69,7 @@ export class RCC8Utility {
         continue;
       }
 
-      // Relation: {DC, PO}(A, B) or DC(A, B)
+      // Relation: {EC, DC}(A, B) or DC(A, B)
       const relMatch = trimmed.match(/^(\{[^}]+\}|\w+)\(([^,]+),\s*([^)]+)\)$/);
       if (relMatch) {
         let rels;
