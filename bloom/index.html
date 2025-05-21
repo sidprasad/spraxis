@@ -8,11 +8,11 @@
 
 <body>
   <textarea id="spec-input" rows="10" cols="60">
-Region A, B, C
-Region D
-EQ(A, B)
-TPP(B, C)
+Region A, B
+NTPP(A, B)
+TPP(A, B)
 </textarea>
+<p> Default should make A a proper part of B. But this doesn't work rn.</p>
 <button id="render-btn">Render</button>
   <div
     id="diagram-container"
