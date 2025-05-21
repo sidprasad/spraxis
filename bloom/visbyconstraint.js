@@ -73,6 +73,9 @@ export async function buildDiagram(relations, regions) {
 
 
 
+
+  // TODO: REBUILD THIS TO USE DISJUNCTIONS, ETC.
+
   // New diagram builder each time
   const db = new bloom.DiagramBuilder(bloom.canvas(400, 400), "rcc8", 1);
   const { type, predicate, forall, forallWhere, ensure, circle, text, encourage, layer } = db;

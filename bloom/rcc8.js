@@ -23,6 +23,14 @@ export class RCC8Utility {
   constructor(spec) {
     this.spec = spec;
     let { regions, relations } = this.parseSpec();
+
+
+    // TODO: Is this correct? I'm worried things
+    // are a little messed up in terms of | vs &.
+    console.log("Parsed regions", regions);
+    console.log("Parsed relations", relations);
+
+
     this.regions = regions;
     this.relations = relations;
   }
@@ -33,11 +41,10 @@ export class RCC8Utility {
 
 
   /**
-   * @param {string} spec - The RCC8 specification string. Disjunctions are separated by "|". Conjunctions are newline-separated.
-   * 
+   * @param {string} spec - The RCC8 specification string. Each line is a single RCC8 def.. 
    * Example: 
    * Region A, B, C
-   * EC(A, B) | DC(B, C) | PO(A, C)
+   * EC(A, B)
    * PO(A,B)
    * 
    * @returns  {Object} {regions - Array of region names (e.g., ["A", "B", "C"]), 
@@ -62,30 +69,21 @@ export class RCC8Utility {
         continue;
       }
 
-      // Split line on '|', treat each as a disjunctive constraint
-      const disjuncts = trimmed.split("|").map(s => s.trim());
-      for (const disjunct of disjuncts) {
-        // Relation: {DC, PO}(A, B) or DC(A, B)
-        const relMatch = disjunct.match(/^(\{[^}]+\}|\w+)\(([^,]+),\s*([^)]+)\)$/);
-        if (relMatch) {
-          let rels;
-          if (relMatch[1].startsWith("{")) {
-            rels = relMatch[1].slice(1, -1).split(",").map(r => r.trim()).filter(r => RCC8Relations.includes(r));
-          } else {
-            rels = [relMatch[1]];
-          }
-          const a = relMatch[2].trim();
-          const b = relMatch[3].trim();
-          if (!relations[a]) relations[a] = {};
-          // If already present, take the union (disjunction) of possible relations
-          if (relations[a][b]) {
-            relations[a][b] = Array.from(new Set([...relations[a][b], ...rels]));
-          } else {
-            relations[a][b] = rels;
-          }
-          regions.add(a);
-          regions.add(b);
+      // Relation: {DC, PO}(A, B) or DC(A, B)
+      const relMatch = trimmed.match(/^(\{[^}]+\}|\w+)\(([^,]+),\s*([^)]+)\)$/);
+      if (relMatch) {
+        let rels;
+        if (relMatch[1].startsWith("{")) {
+          rels = relMatch[1].slice(1, -1).split(",").map(r => r.trim()).filter(r => RCC8Relations.includes(r));
+        } else {
+          rels = [relMatch[1]];
         }
+        const a = relMatch[2].trim();
+        const b = relMatch[3].trim();
+        if (!relations[a]) relations[a] = {};
+        relations[a][b] = rels;
+        regions.add(a);
+        regions.add(b);
       }
     }
     return { regions: Array.from(regions), relations };
