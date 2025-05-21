@@ -132,59 +132,52 @@ export async function buildDiagram(relations, regions) {
     ensure(disjoint(a.text, b.text));
   });
 
-  console.log("Relations: ", relations);
 
 
-  
 
   for (const a of Object.keys(relations)) {
     for (const b of Object.keys(relations[a])) {
-        const rels = relations[a][b]; // array of allowed relations
+      const rels = relations[a][b]; // array of allowed relations
+
+      if (a === b) {
+        continue;
+      }
+
+      let aRegion = regionMap[a];
+      let bRegion = regionMap[b];
+
+      // If rels has only one relation, use that
 
 
-        // TODO: Here, we have to deal with contiguous subsets?
+      // Otherwise, if there are multiple relations, exclude the ones that
+      // are not in the list
 
+      // if (rels.length === 1) {
+      //   let rel = rels[0];
+      //   if (rel === "DC") DC(aRegion, bRegion);
+      //   else if (rel === "EC") EC(aRegion, bRegion);
+      //   else if (rel === "PO") PO(aRegion, bRegion);
+      //   else if (rel === "EQ") EQ(aRegion, bRegion);
+      //   else if (rel === "TPP") TPP(aRegion, bRegion);
+      //   else if (rel === "NTPP") NTPP(aRegion, bRegion);
 
+      // }
+      // else if (rels.length > 1) {
+      // Exclude the relations that are not in the list
+      let relsSet = new Set(rels);
+      if (!relsSet.has("DC")) notDC(aRegion, bRegion);
 
-        if(a === b) {
-            continue;
-        }
+      if (!relsSet.has("EC")) notEC(aRegion, bRegion);
 
-          let aRegion = regionMap[a];
-          let bRegion = regionMap[b];
+      if (!relsSet.has("PO")) notPO(aRegion, bRegion);
 
-        // If rels has only one relation, use that
-        
-
-        // Otherwise, if there are multiple relations, exclude the ones that
-        // are not in the list
-
-        if (rels.length === 1) {
-          let rel = rels[0];
-          if (rel === "DC") DC(aRegion, bRegion);
-          else if (rel === "EC") EC(aRegion, bRegion);
-          else if (rel === "PO") PO(aRegion, bRegion);
-          else if (rel === "EQ") EQ(aRegion, bRegion);
-          else if (rel === "TPP") TPP(aRegion, bRegion);
-          else if (rel === "NTPP") NTPP(aRegion, bRegion);
-        
-        }
-        else if (rels.length > 1) {
-          // Exclude the relations that are not in the list
-          let relsSet = new Set(rels);
-          if (!relsSet.has("DC")) notDC(aRegion, bRegion);
-
-          if (!relsSet.has("EC")) notEC(aRegion, bRegion);
-
-          if (!relsSet.has("PO")) notPO(aRegion, bRegion);
-
-          if (!relsSet.has("EQ")) notEQ(aRegion, bRegion);
-          if (!relsSet.has("TPP")) notTPP(aRegion, bRegion);
-          if (!relsSet.has("NTPP")) notNTPP(aRegion, bRegion);
-        }
-
+      if (!relsSet.has("EQ")) notEQ(aRegion, bRegion);
+      if (!relsSet.has("TPP")) notTPP(aRegion, bRegion);
+      if (!relsSet.has("NTPP")) notNTPP(aRegion, bRegion);
     }
-}
+
+    //}
+  }
 
 
   //// TODO: Probably need to write these in a more consistent way :)
@@ -210,20 +203,20 @@ export async function buildDiagram(relations, regions) {
   });
 
 
-// NOT EC
-forallWhere({ a: Region, b: Region }, ({ a, b }) => notEC.test(a, b), ({ a, b }) => {
-  ensure(
-    greaterThan(
-      bloom.abs(
-        bloom.sub(
-          bloom.ops.vdist(a.icon.center, b.icon.center),
-          bloom.add(a.icon.r, b.icon.r)
-        )
-      ),
-      epsilon
-    )
-  );
-});
+  // NOT EC
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => notEC.test(a, b), ({ a, b }) => {
+    ensure(
+      greaterThan(
+        bloom.abs(
+          bloom.sub(
+            bloom.ops.vdist(a.icon.center, b.icon.center),
+            bloom.add(a.icon.r, b.icon.r)
+          )
+        ),
+        epsilon
+      )
+    );
+  });
 
 
   // PO: Partial Overlap
@@ -232,13 +225,13 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notEC.test(a, b), ({ a, b })
     ensure(
       greaterThan(
         bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.abs(bloom.sub(a.icon.r ,b.icon.r))
+        bloom.abs(bloom.sub(a.icon.r, b.icon.r))
       )
     );
     ensure(
       lessThan(
         bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.add(a.icon.r , b.icon.r)
+        bloom.add(a.icon.r, b.icon.r)
       )
     );
     // Optionally, limit maximum overlap (e.g., at most 95%)
@@ -251,23 +244,23 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notEC.test(a, b), ({ a, b })
   });
 
 
-  
-forallWhere({ a: Region, b: Region }, ({ a, b }) => notPO.test(a, b), ({ a, b }) => {
-  // Enforce: d ≤ |r1 - r2| + ε  OR  d ≥ r1 + r2 - ε
-  // (This will "push" the solution out of the PO interval)
-  ensure(
-    bloom.or(
-      lessThan(
-        bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.add(bloom.abs(bloom.sub(a.icon.r, b.icon.r)), epsilon)
-      ),
-      greaterThan(
-        bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.sub(bloom.add(a.icon.r, b.icon.r), epsilon)
+
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => notPO.test(a, b), ({ a, b }) => {
+    // Enforce: d ≤ |r1 - r2| + ε  OR  d ≥ r1 + r2 - ε
+    // (This will "push" the solution out of the PO interval)
+    ensure(
+      bloom.or(
+        lessThan(
+          bloom.ops.vdist(a.icon.center, b.icon.center),
+          bloom.add(bloom.abs(bloom.sub(a.icon.r, b.icon.r)), epsilon)
+        ),
+        greaterThan(
+          bloom.ops.vdist(a.icon.center, b.icon.center),
+          bloom.sub(bloom.add(a.icon.r, b.icon.r), epsilon)
+        )
       )
-    )
-  );
-});
+    );
+  });
 
 
   // EQ: Equal
@@ -279,12 +272,13 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notPO.test(a, b), ({ a, b })
 
   // Sort of works I think?
   forallWhere({ a: Region, b: Region }, ({ a, b }) => notEQ.test(a, b), ({ a, b }) => {
-  ensure(
-    greaterThan(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      epsilon
-    )
-  );});
+    ensure(
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        epsilon
+      )
+    );
+  });
 
 
 
@@ -294,7 +288,7 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notPO.test(a, b), ({ a, b })
     ensure(
       equal(
         bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.abs(bloom.sub(b.icon.r , a.icon.r))
+        bloom.abs(bloom.sub(b.icon.r, a.icon.r))
       )
     );
     ensure(greaterThan(b.icon.r, a.icon.r));
@@ -313,14 +307,14 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notPO.test(a, b), ({ a, b })
 
 
 
-forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b }) => {
-  ensure(
-    greaterThan(
-      bloom.ops.vdist(a.icon.center, b.icon.center),
-      bloom.sub(bloom.abs(b.icon.r, a.icon.r), epsilon)
-    )
-  );
-});
+  forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b }) => {
+    ensure(
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.sub(bloom.abs(b.icon.r, a.icon.r), epsilon)
+      )
+    );
+  });
 
 
   // NTPP: Non-Tangential Proper Part
@@ -345,7 +339,7 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b 
     ensure(
       equal(
         bloom.ops.vdist(a.icon.center, b.icon.center),
-        bloom.abs(bloom.sub(a.icon.r , b.icon.r))
+        bloom.abs(bloom.sub(a.icon.r, b.icon.r))
       )
     );
     ensure(greaterThan(a.icon.r, b.icon.r));
@@ -358,22 +352,22 @@ forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPP.test(a, b), ({ a, b 
 
   // NOT TPPi
   forallWhere({ a: Region, b: Region }, ({ a, b }) => notTPPi.test(a, b), ({ b, a }) => {
-      ensure(
-        greaterThan(
-          bloom.ops.vdist(a.icon.center, b.icon.center),
-          bloom.sub(bloom.abs(b.icon.r, a.icon.r), epsilon)
-        )
-      );
+    ensure(
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.sub(bloom.abs(b.icon.r, a.icon.r), epsilon)
+      )
+    );
   });
 
   // NTPPi: Not Non-Tangential Proper Part inverse
   forallWhere({ a: Region, b: Region }, ({ a, b }) => notNTPPi.test(a, b), ({ b, a }) => {
     ensure(
-        greaterThan(
-          bloom.ops.vdist(a.icon.center, b.icon.center),
-          bloom.add(bloom.abs(bloom.sub(a.icon.r, b.icon.r)), epsilon)
-        )
-      );
+      greaterThan(
+        bloom.ops.vdist(a.icon.center, b.icon.center),
+        bloom.add(bloom.abs(bloom.sub(a.icon.r, b.icon.r)), epsilon)
+      )
+    );
   });
 
 
