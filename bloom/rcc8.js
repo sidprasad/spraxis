@@ -9,8 +9,8 @@ export const PO = "PO";    // Partial Overlap
 export const TPP = "TPP";  // Tangential Proper Part
 export const NTPP = "NTPP";// Non-Tangential Proper Part
 export const EQ = "EQ";    // Equal
-export const TPPi = "TPPi"; // Tangential Proper Part inverse
-export const NTPPi = "NTPPi"; // Non-Tangential Proper Part inverse
+export const TPPi = "TPPI"; // Tangential Proper Part inverse
+export const NTPPi = "NTPPI"; // Non-Tangential Proper Part inverse
 
 export const RCC8Relations = [DC, EC, PO, TPP, NTPP, EQ, NTPPi, TPPi];
 

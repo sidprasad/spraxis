@@ -122,6 +122,21 @@ export function checkPathConsistency(regions, inputRelations) {
       }
     }
   }
+  // If any of the relations are empty, we have an inconsistency
+  for (const a of regions) {
+    for (const b of regions) {
+      if (a !== b && constraints[a][b].length === 0) {
+        return {
+          consistent: false,
+          culprit: { i: a, j: b },
+          message: `Inconsistency: (${a},${b}) became empty`
+        };
+      }
+    }
+  }
+
+
+
   return {
     consistent: true,
     refined: constraints
