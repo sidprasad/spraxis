@@ -34,4 +34,5 @@ It's nice, but there are some issues here -- largely around (What if the spec is
   - There may be non-contiguous "forks" in the disjunction zone. Perhaps indentify these, and allow exploration by allowing users to choose which non-contiguous fork they mean.
   - This helps them refine their understanding.
   - IF they don't care, we just pick one and proceed!
+  - https://eule.readthedocs.io/en/latest/usage.html may be useful :)
 
